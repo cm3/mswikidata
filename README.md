@@ -22,7 +22,7 @@
 ## How to Use
 
 1. **Select an Entity**:
-   - Enter a Wikidata entity ID (e.g., `Q12345`) in the input field and click "Move".
+   - Enter a Wikidata entity ID (e.g., `Q11603425`) in the input field and click "Move".
 2. **Explore Relationships**:
    - Click on related entities to explore their connections and properties.
 3. **Adjust Label Languages**:
