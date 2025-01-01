@@ -68,66 +68,80 @@ export async function processEntity(entityId) {
   const overlay = document.getElementById('rendering-overlay');
   overlay.style.display = 'flex';
 
-  const data = await fetchEntityData(entityId);
-  const entity = data.entities[entityId];
-  if (!entity) {
-    alert(`エンティティ ${entityId} が見つかりませんでした。`);
-    return;
-  }
-  currentEntityId.set(entityId);
-
-  // ラベルを保持
+  const languagesList = get(languages);
+  const languagesListStr = languagesList.join(",");
   const labels = get(storedLabels);
-  labels[entityId] = getLabel(entity);
-  storedLabels.set(labels);
-  currentEntityLabel.set(labels[entityId]);
-
-  const relatedEntities = [];
-  let currentGraphData = get(graphData);
-  const propertyLabels = get(storedPropertyLabels);
-
-  for (const [property, claims] of Object.entries(entity.claims)) {
-    const propertyLabel = await fetchPropertyLabel(property);
-
-    for (const claim of claims) {
-      if (
-        claim.mainsnak?.datatype === 'wikibase-item' &&
-        claim.mainsnak?.datavalue?.value?.id
-      ) {
-        const targetId = claim.mainsnak.datavalue.value.id;
-        currentGraphData += `${entityId} -->|"${propertyLabel} (${property})"| ${targetId}\n`;
-        if (!propertyLabels[property]) {
-          propertyLabels[property] = propertyLabel;
-        }
-        relatedEntities.push(targetId);
-      }
+  
+  try {
+    // エンティティIDの有効性確認
+    const entityData = await fetchEntityData(entityId);
+    if (!entityData.entities || !entityData.entities[entityId]) {
+      console.warn(`Invalid entity ID: ${entityId}`);
+      alert(`Invalid entity ID: ${entityId}`);
+      return; // 無効なIDの場合は処理を中断
     }
+    const entityLabel = getLabelFromEntity(entityData.entities[entityId], null, languagesList); // ラベルを取得     
+    labels[entityId] = entityLabel;
+    currentEntityId.set(entityId);
+    currentEntityLabel.set(entityLabel);
+
+    const query = `
+      SELECT ?object ?objectLabel ?property ?pLabel WHERE {
+        wd:${entityId} ?property ?object .
+        ?p wikibase:directClaim ?property .
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "${languagesListStr},[AUTO_LANGUAGE]". }
+      }
+    `;
+    const results = await fetchSparqlData(query);
+    console.log(results);
+    if (results.length === 0) {
+      console.warn(`No results found for entity ${entityId}`);
+      return;
+    }
+
+    const linksData = [];
+    let currentGraphData = get(graphData);
+    const propertyLabels = get(storedPropertyLabels);
+
+    results.forEach(result => {
+      // object が リテラル や 画像の URI などの場合スキップ
+      if (result.object.type !== 'uri' || !result.object.value.startsWith('http://www.wikidata.org/entity/')) {
+        return;
+      }
+      const objectId = result.object.value.split('/').pop(); // Qxxx
+      const objectLabel = result.objectLabel?.value || objectId;
+      const propertyId = result.property.value.split('/').pop();
+      const propertyLabel = result.pLabel?.value || propertyId;
+      labels[objectId] = objectLabel;
+      propertyLabels[propertyId] = propertyLabel;
+      currentGraphData += `${entityId} -->|"${propertyLabel} (${propertyId})"| ${objectId}\n`;
+      linksData.push({
+        id: objectId,
+        label: objectLabel || null,
+      });
+    });
+
+    storedLabels.set(labels)
+    storedPropertyLabels.set(propertyLabels);
+    graphData.set(currentGraphData);
+    links.set(linksData); // ストアにリンクデータを設定
+
+    //await initializeBackwardProperties();
+    await fetchFrequentProperties();
+    const backwardPropertyElement = document.getElementById("backward-property");
+    if (backwardPropertyElement) {
+      backwardPropertyElement.value = ""; // 未選択状態に戻す
+    }
+    backwardLinks.set([]);
+    await updateLabels();
+    await renderGraph();
+
+  } catch (error) {
+    console.error('Error processing entity:', error);
+    alert(`Failed to process entity: ${entityId}`);
+  } finally {
+    overlay.style.display = 'none';
   }
-
-  storedPropertyLabels.set(propertyLabels);
-  graphData.set(currentGraphData);
-  
-  // 関連エンティティのラベルを事前に取得
-  await preloadLabels(relatedEntities);
-
-  // プリロード後、リンクデータを作成
-  const linksData = relatedEntities.map(targetId => ({
-    id: targetId,
-    label: get(storedLabels)[targetId] || null,
-  }));
-  
-  links.set(linksData); // ストアにリンクデータを設定
-
-  //await initializeBackwardProperties();
-  await fetchFrequentProperties();
-  const backwardPropertyElement = document.getElementById("backward-property");
-  if (backwardPropertyElement) {
-    backwardPropertyElement.value = ""; // 未選択状態に戻す
-  }
-  backwardLinks.set([]);
-  await updateLabels();
-  await renderGraph();
-  overlay.style.display = 'none'; // オーバーレイを非表示
 }
 
 // 言語の変更に応じてラベルを更新する関数

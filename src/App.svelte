@@ -17,7 +17,7 @@
 
 <main>
 	<h1>
-		<img src="/smlogo.png" alt="Logo" />
+		<img src="./smlogo.png" alt="Logo" />
 		Mermaid Surfing on Wikidata
 	</h1>
 	<EntityInput on:search={(event) => onEntitySearch(event.detail)} />
