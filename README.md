@@ -1,6 +1,7 @@
 # Mermaid Surfing on Wikidata
 
-**Mermaid Surfing on Wikidata** is a web-based tool to visualize relationships between Wikidata entities using Mermaid diagrams.
+**Mermaid Surfing on Wikidata** is a web-based tool to visualize relationships between Wikidata entities using Mermaid diagrams. This tool is hosted online at Vercel: [Mermaid Surfing on Wikidata](https://mswikidata.vercel.app/).  
+You can try it live without any setup!
 
 ## Features
 
@@ -15,9 +16,6 @@
 
 - **Editable Code View**:
   Switch between graph visualization and Mermaid code editing.
-
-- **Wikidata Integration**:
-  Automatically fetch and display related entity and property data from Wikidata.
 
 ## How to Use
 
@@ -47,6 +45,37 @@ For exporting diagrams as PNG or other formats, use the [Mermaid Live Editor](ht
 
 - A modern web browser with JavaScript enabled.
 
+## Development Setup
+
+To run this project locally, follow these steps:
+
+1. **Clone the Repository**:
+
+```bash
+git clone https://github.com/cm3/mswikidata.git
+cd mswikidata
+```
+
+2. **Install Dependencies**:
+
+  Make sure you have Node.js installed. Then run `npm install`.
+
+3. **Build and Run the Project**:
+
+  Start a development server with `npm run dev`.
+
+4. **Build for Production** (Optional):
+
+  To generate a production-ready build, run `npm run build`.
+
 ## License
 
-MIT License
+[MIT License](https://github.com/cm3/mswikidata/blob/main/LICENSE)
+
+## Included Code
+
+This project includes the following third-party code:
+
+- [GitHub Corners](https://github.com/tholman/github-corners) by Tim Holman
+  Licensed under the [MIT License](https://github.com/tholman/github-corners/blob/master/license.md).  
+  GitHub Corners is used to add a stylish corner link to this project's repository.
