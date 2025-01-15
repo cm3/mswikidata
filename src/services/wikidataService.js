@@ -48,18 +48,19 @@ export async function preloadLabels(entities) {
 export async function updateLabels() {
   const labels = get(storedLabels);
   console.log(labels);
-  let currentGraphData = get(graphData);
+  let currentGraphData = get(graphData).split('\n');
 
   for (const [id, label] of Object.entries(labels)) {
     if (label == null) { // label が null または undefined の場合にスキップ
       continue;
     }
-    const nodeRegex = new RegExp(`${id}[\\[]`, 'g');
-    if (!currentGraphData.match(nodeRegex)) {
-      currentGraphData += `${id}["${label} (${id})"]\n`;
+    const newLine = `${id}["${label} (${id})"]`;
+    const nodeRegex = new RegExp(`\\b${id}\\b`); // entityId または objectId にマッチする正規表現
+    if (!currentGraphData.includes(newLine) && currentGraphData.some(line => nodeRegex.test(line))) {
+      currentGraphData.push(newLine);
     }
   }
-  graphData.set(currentGraphData);
+  graphData.set(currentGraphData.join('\n'));
 }
 
 // メインのエンティティ処理
@@ -100,7 +101,7 @@ export async function processEntity(entityId) {
     }
 
     const linksData = [];
-    let currentGraphData = get(graphData);
+    let currentGraphData = get(graphData).split('\n');
     const propertyLabels = get(storedPropertyLabels);
 
     results.forEach(result => {
@@ -114,7 +115,10 @@ export async function processEntity(entityId) {
       const propertyLabel = result.pLabel?.value || propertyId;
       labels[objectId] = objectLabel;
       propertyLabels[propertyId] = propertyLabel;
-      currentGraphData += `${entityId} -->|"${propertyLabel} (${propertyId})"| ${objectId}\n`;
+      const newLine = `${entityId} -->|"${propertyLabel} (${propertyId})"| ${objectId}`;
+      if (!currentGraphData.includes(newLine)) {
+        currentGraphData.push(newLine);
+      }
       linksData.push({
         id: objectId,
         label: objectLabel || null,
@@ -123,7 +127,7 @@ export async function processEntity(entityId) {
 
     storedLabels.set(labels)
     storedPropertyLabels.set(propertyLabels);
-    graphData.set(currentGraphData);
+    graphData.set(currentGraphData.join('\n'));
     links.set(linksData); // ストアにリンクデータを設定
 
     //await initializeBackwardProperties();
@@ -204,18 +208,18 @@ function getLabelFromEntity(entity, fallback, langs) {
 
 //言語変換後にグラフのラベルを更新
 export async function updateGraphLabels() {
-  let currentGraphData = get(graphData);
+  let currentGraphDataRaw = get(graphData);
 
   // `文字列["文字列"]` の形式の行を削除
-  currentGraphData = currentGraphData.replace(/^[QL0-9]+\["[^"]+"\]\n?/gm, '');
+  currentGraphDataRaw = currentGraphDataRaw.replace(/^[QL0-9]+\["[^"]+"\]\n?/gm, '');
 
   // プロパティラベルの置換
   const propertyLabels = get(storedPropertyLabels); // 現在のプロパティラベルを取得
-  currentGraphData = currentGraphData.replace(/"([^"]*?)\s*\((P\d+)\)"/g, (match, label, id) => {
+  currentGraphDataRaw = currentGraphDataRaw.replace(/"([^"]*?)\s*\((P\d+)\)"/g, (match, label, id) => {
     return `"${propertyLabels[id] || label} (${id})"`;
   });
 
-  graphData.set(currentGraphData); // ストアに反映
+  graphData.set(currentGraphDataRaw); // ストアに反映
   await updateLabels();
 }
 
