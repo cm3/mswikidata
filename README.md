@@ -1,7 +1,6 @@
 # Mermaid Surfing on Wikidata
 
-**Mermaid Surfing on Wikidata** is a web-based tool to visualize relationships between Wikidata entities using Mermaid diagrams. This tool is hosted online at Vercel: [Mermaid Surfing on Wikidata](https://mswikidata.vercel.app/).  
-You can try it live without any setup!
+**Mermaid Surfing on Wikidata** is a web-based tool to visualize relationships between Wikidata entities using Mermaid diagrams. This tool is hosted online at Vercel: [Mermaid Surfing on Wikidata](https://mswikidata.vercel.app/) ![Vercel](https://vercelbadge.vercel.app/api/cm3/mswikidata). You can try it live without any setup!
 
 ## Features
 
